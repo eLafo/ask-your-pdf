@@ -4,11 +4,16 @@ from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
+from langchain.chains.question_answering import load_qa_chain
+from langchain.llms import OpenAI
 
 def main():
     load_dotenv()
-    st.set_page_config(page_title="Ask your PDF")
-    st.header("Ask your PDF 💬")
+    st.set_page_config(page_title="Chat your PDF")
+    st.header("Chat your PDF 💬")
+
+    llm = OpenAI()
+    chain = load_qa_chain(llm, chain_type="stuff")
 
     # Upload PDF
     pdf = st.file_uploader("Upload your PDF", type=["pdf"])
@@ -33,6 +38,14 @@ def main():
         # Create embeddings
         embeddings = OpenAIEmbeddings()
         knowledge_base = FAISS.from_texts(chunks, embeddings)
-        st.write(knowledge_base)
+        
+        # Ask your question
+        user_question = st.text_input("Haz tu pregunta")
+        if user_question:
+            docs = knowledge_base.similarity_search(user_question)
+
+            response = chain.run(input_documents=docs, question=user_question)
+
+            st.write(response)
 if __name__ == '__main__':
     main()
